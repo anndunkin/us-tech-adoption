@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>U.S. Household Technology Adoption · 1900–Present</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <style>
+    /* ── Design tokens ── */
+    :root, [data-theme="light"] {
+      --color-bg: #f5f4f0;
+      --color-surface: #fafaf8;
+      --color-surface-2: #ffffff;
+      --color-border: #d8d5ce;
+      --color-divider: #e0ddd7;
+      --color-text: #1a1914;
+      --color-text-muted: #6b6a66;
+      --color-text-faint: #b0ae AA;
+      --color-text-faint: #b5b3ad;
+      --color-primary: #0f5f64;
+      --color-primary-hover: #0a4549;
+      --color-accent: #d97706;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.10);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,0.13);
+      --radius-sm: 0.375rem;
+      --radius-md: 0.5rem;
+      --radius-lg: 0.875rem;
+      --radius-xl: 1.25rem;
+      --font-body: 'DM Sans', system-ui, sans-serif;
+      --font-mono: 'DM Mono', 'Courier New', monospace;
+      --transition: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    [data-theme="dark"] {
+      --color-bg: #0f0e0d;
+      --color-surface: #161513;
+      --color-surface-2: #1c1b19;
+      --color-border: #2e2d2b;
+      --color-divider: #252422;
+      --color-text: #e8e6e1;
+      --color-text-muted: #7a7875;
+      --color-text-faint: #4a4845;
+      --color-primary: #4f98a3;
+      --color-primary-hover: #3d828d;
+      --color-accent: #fdab43;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,0.5);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme]) {
+        --color-bg: #0f0e0d;
+        --color-surface: #161513;
+        --color-surface-2: #1c1b19;
+        --color-border: #2e2d2b;
+        --color-divider: #252422;
+        --color-text: #e8e6e1;
+        --color-text-muted: #7a7875;
+        --color-text-faint: #4a4845;
+        --color-primary: #4f98a3;
+        --color-primary-hover: #3d828d;
+        --color-accent: #fdab43;
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+        --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+        --shadow-lg: 0 12px 40px rgba(0,0,0,0.5);
+      }
+    }
+
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
+    body {
+      min-height: 100dvh;
+      font-family: var(--font-body);
+      font-size: 1rem;
+      color: var(--color-text);
+      background: var(--color-bg);
+      transition: background var(--transition), color var(--transition);
+    }
+    button { cursor: pointer; font: inherit; border: none; background: none; }
+
+    /* ── Layout ── */
+    .app {
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1.5rem;
+      padding: 1.5rem 2rem 1.25rem;
+      border-bottom: 1px solid var(--color-divider);
+      background: var(--color-surface);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-left { display: flex; align-items: center; gap: 0.875rem; }
+    .logo-mark {
+      width: 36px; height: 36px; flex-shrink: 0;
+    }
+    .header-titles { display: flex; flex-direction: column; gap: 0.125rem; }
+    .site-title {
+      font-size: clamp(0.9rem, 0.7rem + 0.8vw, 1.15rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      color: var(--color-text);
+    }
+    .site-subtitle {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .btn-toggle-group {
+      display: flex;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: var(--color-bg);
+    }
+    .btn-toggle {
+      padding: 0.35rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: var(--color-text-muted);
+      transition: all var(--transition);
+      border-right: 1px solid var(--color-border);
+    }
+    .btn-toggle:last-child { border-right: none; }
+    .btn-toggle.active {
+      background: var(--color-primary);
+      color: #fff;
+    }
+    .btn-icon {
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      color: var(--color-text-muted);
+      background: var(--color-bg);
+      transition: all var(--transition);
+    }
+    .btn-icon:hover { color: var(--color-text); border-color: var(--color-text-muted); }
+
+    /* ── Main layout ── */
+    main {
+      display: grid;
+      grid-template-columns: 230px 1fr;
+      flex: 1;
+      min-height: 0;
+    }
+    @media (max-width: 700px) {
+      main { grid-template-columns: 1fr; }
+      .sidebar { order: 2; border-right: none; border-top: 1px solid var(--color-divider); }
+      .chart-area { order: 1; }
+      header { padding: 1rem; }
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      border-right: 1px solid var(--color-divider);
+      padding: 1.25rem;
+      background: var(--color-surface);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .sidebar-section-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-text-faint);
+      margin-bottom: 0.625rem;
+    }
+    .tech-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .tech-item {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      padding: 0.4rem 0.5rem;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: background var(--transition);
+      border: 1px solid transparent;
+    }
+    .tech-item:hover { background: var(--color-surface-2); }
+    .tech-item.active { background: color-mix(in oklab, var(--item-color) 10%, var(--color-surface)); border-color: color-mix(in oklab, var(--item-color) 30%, transparent); }
+    .tech-swatch {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      transition: opacity var(--transition);
+    }
+    .tech-item:not(.active) .tech-swatch { opacity: 0.3; }
+    .tech-item-info { display: flex; flex-direction: column; gap: 0.05rem; }
+    .tech-name {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--color-text);
+      transition: color var(--transition);
+    }
+    .tech-item:not(.active) .tech-name { color: var(--color-text-muted); }
+    .tech-era {
+      font-size: 0.65rem;
+      color: var(--color-text-faint);
+      font-variant-numeric: tabular-nums;
+    }
+    .toggle-all-btns {
+      display: flex; gap: 0.375rem;
+    }
+    .btn-sm {
+      flex: 1;
+      padding: 0.35rem 0.5rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--color-border);
+      background: var(--color-bg);
+      color: var(--color-text-muted);
+      transition: all var(--transition);
+    }
+    .btn-sm:hover { background: var(--color-surface-2); color: var(--color-text); }
+
+    /* Speed comparison panel — horizontal bottom bar */
+    .speed-panel {
+      border-top: 1px solid var(--color-divider);
+      background: var(--color-surface);
+      padding: 0.75rem 1.75rem;
+    }
+    .speed-panel-inner {
+      display: flex;
+      align-items: flex-end;
+      gap: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .speed-panel-inner::-webkit-scrollbar { display: none; }
+    .speed-panel-label {
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-text-faint);
+      white-space: nowrap;
+      margin-bottom: 0.3rem;
+      padding-right: 1rem;
+      flex-shrink: 0;
+      align-self: center;
+    }
+    .speed-cards {
+      display: flex;
+      flex-direction: row;
+      gap: 0;
+      flex: 1;
+      min-width: 0;
+    }
+    .speed-card {
+      flex: 1;
+      min-width: 80px;
+      padding: 0.4rem 0.75rem 0.4rem 0;
+      border-right: 1px solid var(--color-divider);
+    }
+    .speed-card:last-child { border-right: none; }
+    .speed-card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-bottom: 0.3rem;
+      flex-wrap: nowrap;
+    }
+    .speed-card-name {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--color-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .speed-badge {
+      font-size: 0.6rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      padding: 0.08rem 0.35rem;
+      border-radius: 9999px;
+      background: color-mix(in oklab, var(--badge-color) 15%, transparent);
+      color: var(--badge-color);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .speed-bar-wrap {
+      height: 3px;
+      background: var(--color-divider);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .speed-bar {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .speed-sub {
+      font-size: 0.58rem;
+      color: var(--color-text-faint);
+      margin-top: 0.2rem;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    /* ── Chart area ── */
+    .chart-area {
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem 1.75rem;
+      gap: 1rem;
+      overflow: hidden;
+      min-height: 0;
+    }
+    .chart-wrap {
+      position: relative;
+      flex: 1;
+      min-height: 340px;
+    }
+    #chart-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* ── Annotations bar ── */
+    .annotation-strip {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .annotation-pill {
+      font-size: 0.68rem;
+      padding: 0.25rem 0.625rem;
+      border-radius: 9999px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      color: var(--color-text-muted);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .annotation-pill.active {
+      background: color-mix(in oklab, var(--pill-color) 15%, var(--color-surface));
+      border-color: var(--pill-color);
+      color: var(--color-text);
+    }
+
+    /* ── Insight band ── */
+    .insight-band {
+      display: flex;
+      align-items: center;
+      gap: 0.875rem;
+      padding: 0.625rem 1rem;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+    }
+    .insight-icon {
+      font-size: 1rem; flex-shrink: 0;
+    }
+    .insight-text {
+      font-size: 0.78rem;
+      color: var(--color-text-muted);
+      line-height: 1.45;
+    }
+    .insight-text strong { color: var(--color-text); font-weight: 600; }
+
+    /* ── D3 chart elements ── */
+    .axis-label {
+      font-family: var(--font-body);
+      font-size: 11px;
+      fill: var(--color-text-muted);
+    }
+    .axis path, .axis line {
+      stroke: var(--color-border);
+    }
+    .axis text { fill: var(--color-text-muted); }
+    .grid line { stroke: var(--color-divider); stroke-opacity: 0.5; }
+    .grid path { stroke-width: 0; }
+    .tech-line {
+      fill: none;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: stroke-opacity 0.3s ease, stroke-width 0.2s ease;
+    }
+    .tech-line.dimmed { stroke-opacity: 0.08; stroke-width: 1.5; }
+    .tech-line.highlighted { stroke-width: 3.5; }
+    .dot-group { transition: opacity 0.3s ease; }
+    .dot-group.dimmed { opacity: 0.06; }
+
+    /* ── Tooltip ── */
+    .tooltip {
+      position: absolute;
+      pointer-events: none;
+      background: var(--color-surface-2);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 0.75rem 1rem;
+      box-shadow: var(--shadow-lg);
+      min-width: 170px;
+      transition: opacity 0.12s ease;
+      z-index: 50;
+    }
+    .tooltip-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+    .tooltip-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      font-size: 0.78rem;
+      margin-top: 0.2rem;
+    }
+    .tooltip-tech { display: flex; align-items: center; gap: 0.4rem; }
+    .tooltip-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .tooltip-val {
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      font-family: var(--font-mono);
+    }
+    .crosshair { stroke: var(--color-text-muted); stroke-width: 1; stroke-dasharray: 3,3; pointer-events: none; opacity: 0.4; }
+
+    /* ── Marker ── */
+    .era-band { pointer-events: none; }
+    .era-label-text { font-family: var(--font-body); font-size: 10px; fill: var(--color-text-faint); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+
+    /* ── 50% marker ── */
+    .half-line { stroke-dasharray: 4,4; stroke: var(--color-text-faint); stroke-width: 1; pointer-events: none; }
+    .half-label { font-family: var(--font-body); font-size: 10px; fill: var(--color-text-faint); }
+
+    /* Legend inside chart */
+    .end-label { font-family: var(--font-body); font-size: 11px; font-weight: 600; }
+
+    /* ── Misc ── */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <!-- HEADER -->
+  <header>
+    <div class="header-left">
+      <svg class="logo-mark" viewBox="0 0 36 36" fill="none" aria-label="Logo" xmlns="http://www.w3.org/2000/svg">
+        <rect width="36" height="36" rx="8" fill="var(--color-primary)" opacity="0.15"/>
+        <polyline points="4,26 9,18 14,22 19,10 24,16 30,6" stroke="var(--color-primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <circle cx="19" cy="10" r="2.5" fill="var(--color-accent)"/>
+        <circle cx="30" cy="6" r="2" fill="var(--color-primary)" opacity="0.6"/>
+      </svg>
+      <div class="header-titles">
+        <div class="site-title">U.S. Household Technology Adoption</div>
+        <div class="site-subtitle">1900 – Present · S-Curve Analysis</div>
+      </div>
+    </div>
+    <div class="header-controls">
+      <div class="btn-toggle-group">
+        <button class="btn-toggle active" data-scale="linear" onclick="setScale('linear',this)">Linear</button>
+        <button class="btn-toggle" data-scale="log" onclick="setScale('log',this)">Log</button>
+      </div>
+      <div class="btn-toggle-group">
+        <button class="btn-toggle active" data-mode="pct" onclick="setMode('pct',this)">% Adoption</button>
+        <button class="btn-toggle" data-mode="year" onclick="setMode('year',this)">Relative Years</button>
+      </div>
+      <button class="btn-icon" data-theme-toggle title="Toggle theme" aria-label="Switch theme">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main>
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div>
+        <div class="sidebar-section-label">Technologies</div>
+        <div class="toggle-all-btns" style="margin-bottom:0.625rem">
+          <button class="btn-sm" onclick="toggleAll(true)">All On</button>
+          <button class="btn-sm" onclick="toggleAll(false)">All Off</button>
+        </div>
+        <div class="tech-list" id="tech-list"></div>
+      </div>
+
+    </aside>
+
+    <!-- CHART AREA -->
+    <section class="chart-area">
+      <div class="chart-wrap">
+        <svg id="chart-svg"></svg>
+        <div class="tooltip" id="tooltip" style="opacity:0;display:none"></div>
+      </div>
+      <div class="annotation-strip" id="annotation-strip"></div>
+      <div class="insight-band" id="insight-band">
+        <span class="insight-icon">⚡</span>
+        <span class="insight-text" id="insight-text">Hover the chart to explore adoption curves. Toggle technologies on the left, switch between linear and logarithmic scale, and compare relative adoption speeds.</span>
+      </div>
+    </section>
+  </main>
+
+  <!-- SPEED PANEL -->
+  <div class="speed-panel">
+    <div class="speed-panel-inner">
+      <div class="speed-panel-label">Adoption Speed<br>10% → 50%</div>
+      <div class="speed-cards" id="speed-cards"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────
+//  DATA — from Our World in Data / Comin & Hobijn (2004) + Pew
+// ─────────────────────────────────────────────────────────────────
+const TECHS = [
+  {
+    id: "landline",
+    name: "Landline Phone",
+    color: "#4f98a3",
+    era: "1900s",
+    commercialYear: 1876,
+    description: "First consumer technology to connect households nationally",
+    data: [
+      {y:1903,v:10},{y:1905,v:14},{y:1910,v:24.5},{y:1915,v:30},
+      {y:1920,v:34},{y:1925,v:38},{y:1929,v:41},{y:1930,v:39.5},
+      {y:1935,v:32},{y:1940,v:37},{y:1945,v:46},{y:1950,v:62},
+      {y:1955,v:71.67},{y:1960,v:78.5},{y:1965,v:85},{y:1970,v:87},
+      {y:1975,v:90},{y:1980,v:92.5},{y:1985,v:92},{y:1990,v:93.5},
+      {y:1995,v:94},{y:2000,v:94},{y:2005,v:92},{y:2009,v:83},
+      {y:2010,v:75},{y:2013,v:58.7},{y:2016,v:50.7},{y:2018,v:41.7}
+    ]
+  },
+  {
+    id: "electricity",
+    name: "Electricity",
+    color: "#f0c040",
+    era: "1900s",
+    commercialYear: 1882,
+    description: "The platform technology that enabled all others",
+    data: [
+      {y:1908,v:10},{y:1910,v:12.33},{y:1915,v:20},{y:1920,v:33.5},
+      {y:1925,v:52},{y:1929,v:68},{y:1930,v:68},{y:1935,v:68.5},
+      {y:1940,v:78},{y:1945,v:85},{y:1950,v:94},{y:1955,v:98.33},
+      {y:1960,v:99},{y:1980,v:99},{y:2000,v:99},{y:2011,v:100}
+    ]
+  },
+  {
+    id: "radio",
+    name: "Radio",
+    color: "#a78bfa",
+    era: "1920s",
+    commercialYear: 1920,
+    description: "First mass broadcast medium — fastest early adopter",
+    data: [
+      {y:1925,v:10},{y:1926,v:17},{y:1928,v:28},{y:1929,v:36},
+      {y:1930,v:45},{y:1931,v:52},{y:1932,v:60},{y:1935,v:68},
+      {y:1940,v:81},{y:1945,v:88},{y:1950,v:92},{y:1960,v:95},
+      {y:1970,v:98},{y:1980,v:99},{y:1990,v:99},{y:2000,v:99},{y:2005,v:99}
+    ]
+  },
+  {
+    id: "automobile",
+    name: "Automobile",
+    color: "#e87840",
+    era: "1910s",
+    commercialYear: 1908,
+    description: "Reshaped American geography and daily life",
+    data: [
+      {y:1915,v:10},{y:1919,v:23},{y:1920,v:28},{y:1925,v:49},
+      {y:1929,v:58.5},{y:1930,v:59},{y:1933,v:50},{y:1940,v:55},
+      {y:1945,v:46},{y:1950,v:58},{y:1955,v:68},{y:1960,v:75},
+      {y:1965,v:79},{y:1970,v:80},{y:1975,v:83},{y:1980,v:86},
+      {y:1985,v:88},{y:1990,v:91},{y:1995,v:91},{y:2000,v:92},
+      {y:2005,v:91}
+    ]
+  },
+  {
+    id: "colortv",
+    name: "Color TV",
+    color: "#f06292",
+    era: "1960s",
+    commercialYear: 1954,
+    description: "Benefited from existing B&W TV infrastructure",
+    data: [
+      {y:1966,v:10},{y:1967,v:15},{y:1968,v:21},{y:1969,v:25},
+      {y:1970,v:31},{y:1971,v:39},{y:1972,v:43},{y:1973,v:48},
+      {y:1974,v:57},{y:1975,v:64},{y:1976,v:69},{y:1977,v:74},
+      {y:1979,v:78},{y:1980,v:79},{y:1982,v:85},{y:1985,v:90},
+      {y:1990,v:96},{y:1995,v:94},{y:2000,v:94},{y:2005,v:96}
+    ]
+  },
+  {
+    id: "pc",
+    name: "Personal Computer",
+    color: "#54b87a",
+    era: "1980s",
+    commercialYear: 1977,
+    description: "First programmable household device",
+    data: [
+      {y:1984,v:8.2},{y:1985,v:10},{y:1987,v:13},{y:1990,v:17},
+      {y:1992,v:22},{y:1995,v:30},{y:1997,v:36.6},{y:1998,v:40},
+      {y:1999,v:45},{y:2000,v:51},{y:2001,v:56.3},{y:2003,v:61.8},
+      {y:2005,v:65},{y:2007,v:69.7},{y:2010,v:76.7},{y:2013,v:77},
+      {y:2016,v:78}
+    ]
+  },
+  {
+    id: "internet",
+    name: "Internet",
+    color: "#3da8f5",
+    era: "1990s",
+    commercialYear: 1991,
+    description: "The network that transformed commerce and communication",
+    data: [
+      {y:1993,v:10},{y:1995,v:13},{y:1997,v:19},{y:1998,v:25},
+      {y:1999,v:34},{y:2000,v:42},{y:2001,v:49},{y:2002,v:52},
+      {y:2003,v:54},{y:2004,v:57},{y:2005,v:61},{y:2007,v:65},
+      {y:2009,v:70},{y:2010,v:74},{y:2012,v:81},{y:2014,v:83},
+      {y:2016,v:88}
+    ]
+  },
+  {
+    id: "smartphone",
+    name: "Smartphone",
+    color: "#ff9f40",
+    era: "2010s",
+    commercialYear: 2007,
+    description: "Pocket computer — fastest mass adoption in US history",
+    data: [
+      {y:2011,v:35},{y:2012,v:45},{y:2013,v:54},{y:2014,v:57},
+      {y:2015,v:68},{y:2016,v:73},{y:2017,v:73},{y:2018,v:77},
+      {y:2019,v:81}
+    ]
+  },
+  {
+    id: "socialmedia",
+    name: "Social Media",
+    color: "#f54262",
+    era: "2000s",
+    commercialYear: 2004,
+    description: "From 5% to majority in under a decade",
+    data: [
+      {y:2005,v:5},{y:2006,v:11},{y:2007,v:15},{y:2008,v:21},
+      {y:2009,v:37},{y:2010,v:48},{y:2011,v:50},{y:2012,v:59},
+      {y:2013,v:63},{y:2014,v:62},{y:2015,v:65},{y:2016,v:69},
+      {y:2017,v:80},{y:2018,v:77},{y:2019,v:79}
+    ]
+  },
+  {
+    id: "streaming",
+    name: "Streaming Video",
+    color: "#c084fc",
+    era: "2010s",
+    commercialYear: 2007,
+    description: "Displaced cable TV — 0% to majority in under a decade",
+    data: [
+      {y:2008,v:3},{y:2010,v:8},{y:2012,v:20},{y:2013,v:28},
+      {y:2015,v:52},{y:2017,v:64},{y:2018,v:69},{y:2019,v:74},
+      {y:2020,v:78},{y:2021,v:78},{y:2022,v:83},{y:2023,v:83},
+      {y:2024,v:87},{y:2025,v:89}
+    ]
+  },
+  {
+    id: "ai",
+    name: "Gen AI (ChatGPT+)",
+    color: "#22d3b8",
+    era: "2020s",
+    commercialYear: 2022,
+    description: "Fastest-ever adoption ramp — 0% to 46% in under 3 years",
+    data: [
+      {y:2023.2,v:18},{y:2023.5,v:18},{y:2024.1,v:23},
+      {y:2024.3,v:24},{y:2024.5,v:28},{y:2024.8,v:33},
+      {y:2025.2,v:40},{y:2025.5,v:46},{y:2025.9,v:56}
+    ]
+  }
+];
+
+// Compute years to reach 10%, 25%, 50%, 90% for speed comparison
+function yearsTo(data, targetPct) {
+  for (let i = 1; i < data.length; i++) {
+    if (data[i-1].v < targetPct && data[i].v >= targetPct) {
+      // interpolate
+      const frac = (targetPct - data[i-1].v) / (data[i].v - data[i-1].v);
+      return data[i-1].y + frac * (data[i].y - data[i-1].y);
+    }
+  }
+  return null;
+}
+
+// Prepend a 0% anchor at each technology's commercial year
+TECHS.forEach(t => {
+  if (t.data[0].v > 0) {
+    t.data.unshift({ y: t.commercialYear, v: 0 });
+  }
+});
+
+TECHS.forEach(t => {
+  const y10 = yearsTo(t.data, 10);
+  const y50 = yearsTo(t.data, 50);
+  const y90 = yearsTo(t.data, 90);
+  t.yearAt10 = y10;
+  t.yearAt50 = y50;
+  t.yearAt90 = y90;
+  t.yearsFrom10to50 = (y10 && y50) ? Math.round(y50 - y10) : null;
+  t.yearsFrom10to90 = (y10 && y90) ? Math.round(y90 - y10) : null;
+});
+
+// ─── State ───────────────────────────────────────────────────────
+let activeSet = new Set(TECHS.map(t => t.id));
+let currentScale = "linear";
+let currentMode = "pct";
+let hoveredTech = null;
+
+// ─── SIDEBAR BUILD ───────────────────────────────────────────────
+function buildSidebar() {
+  const list = document.getElementById("tech-list");
+  list.innerHTML = "";
+  TECHS.forEach(t => {
+    const item = document.createElement("div");
+    item.className = "tech-item active";
+    item.style.setProperty("--item-color", t.color);
+    item.dataset.id = t.id;
+    item.innerHTML = `
+      <div class="tech-swatch" style="background:${t.color}"></div>
+      <div class="tech-item-info">
+        <span class="tech-name">${t.name}</span>
+        <span class="tech-era">${t.commercialYear} · ${t.era}</span>
+      </div>
+    `;
+    item.addEventListener("click", () => toggleTech(t.id));
+    item.addEventListener("mouseenter", () => setHover(t.id));
+    item.addEventListener("mouseleave", () => setHover(null));
+    list.appendChild(item);
+  });
+  buildSpeedCards();
+}
+
+function buildSpeedCards() {
+  const container = document.getElementById("speed-cards");
+  container.innerHTML = "";
+  // Sort by speed (years from 10% to 50%)
+  const sorted = [...TECHS]
+    .filter(t => t.yearsFrom10to50 !== null)
+    .sort((a,b) => a.yearsFrom10to50 - b.yearsFrom10to50);
+  const maxYears = Math.max(...sorted.map(t => t.yearsFrom10to50));
+  sorted.forEach(t => {
+    const pct = (1 - (t.yearsFrom10to50 / maxYears)) * 100;
+    const card = document.createElement("div");
+    card.className = "speed-card";
+    card.style.setProperty("--badge-color", t.color);
+    card.style.setProperty("--bar-color", t.color);
+    card.innerHTML = `
+      <div class="speed-card-header">
+        <span class="speed-card-name">${t.name}</span>
+        <span class="speed-badge" style="--badge-color:${t.color}">${t.yearsFrom10to50}y</span>
+      </div>
+      <div class="speed-bar-wrap">
+        <div class="speed-bar" style="width:${pct}%;background:${t.color}"></div>
+      </div>
+      <div class="speed-sub">10% → 50% adoption · started ${Math.round(t.yearAt10)}</div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+// ─── ANNOTATIONS ─────────────────────────────────────────────────
+const ANNOTATIONS = [
+  {id:"ww1",  year:1917, label:"WWI",        color:"#888", note:"WWI slows consumer spending, pausing telephone growth"},
+  {id:"gd",   year:1929, label:"Great Depression", color:"#888", note:"Depression causes auto & phone ownership to briefly decline"},
+  {id:"ww2",  year:1941, label:"WWII",       color:"#888", note:"WWII production freeze halts civilian tech expansion"},
+  {id:"boom", year:1948, label:"Post-War Boom",color:"#54b87a", note:"Post-war prosperity drives TV, cars, and appliances into American homes"},
+  {id:"tv",   year:1955, label:"TV Boom",    color:"#d94f8f", note:"Television invades 50% of homes by 1955 — fastest pre-digital adoption"},
+  {id:"pc",   year:1984, label:"PC Era",     color:"#54b87a", note:"IBM PC and Apple establish home computing as mainstream"},
+  {id:"web",  year:1993, label:"Web Era",    color:"#3da8f5", note:"Mosaic browser launches public internet adoption"},
+  {id:"iphone",year:2007,label:"iPhone",     color:"#f5c842", note:"iPhone launch triggers smartphone S-curve — 81% adoption in 8 years"},
+  {id:"streaming",year:2007,label:"Streaming",  color:"#c084fc", note:"Netflix launches streaming in 2007 — reaches majority of US households in under 8 years, displacing cable TV"},
+  {id:"chatgpt",year:2022,label:"ChatGPT",   color:"#22d3b8", note:"ChatGPT launches Nov 2022 — reaches 100M users in 2 months, fastest product adoption in history"},
+];
+
+function buildAnnotations() {
+  const strip = document.getElementById("annotation-strip");
+  strip.innerHTML = "";
+  ANNOTATIONS.forEach(a => {
+    const pill = document.createElement("button");
+    pill.className = "annotation-pill";
+    pill.style.setProperty("--pill-color", a.color);
+    pill.dataset.id = a.id;
+    pill.textContent = a.year + " · " + a.label;
+    pill.addEventListener("click", () => {
+      document.querySelectorAll(".annotation-pill").forEach(p => p.classList.remove("active"));
+      pill.classList.add("active");
+      document.getElementById("insight-text").innerHTML =
+        `<strong>${a.year} — ${a.label}:</strong> ${a.note}`;
+    });
+    strip.appendChild(pill);
+  });
+}
+
+// ─── CHART ───────────────────────────────────────────────────────
+let svg, g, xScale, yScale, xAxis, yAxis, width, height;
+const MARGIN = {top: 28, right: 120, bottom: 44, left: 48};
+
+function initChart() {
+  const container = document.getElementById("chart-svg");
+  const bb = container.getBoundingClientRect();
+  width = bb.width - MARGIN.left - MARGIN.right;
+  height = bb.height - MARGIN.top - MARGIN.bottom;
+  if (width <= 0 || height <= 0) return;
+
+  d3.select("#chart-svg").selectAll("*").remove();
+  svg = d3.select("#chart-svg");
+  g = svg.append("g").attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
+
+  buildScales();
+
+  // Era background bands
+  const eras = [
+    {y1:1900,y2:1920,label:"ELECTRIFICATION"},{y1:1920,y2:1950,label:"BROADCAST"},
+    {y1:1950,y2:1975,label:"POST-WAR CONSUMER"},{y1:1975,y2:2000,label:"DIGITAL DAWN"},
+    {y1:2000,y2:2026,label:"NETWORKED SOCIETY"}
+  ];
+  const eraCols = ["#4f98a308","#9b7fe808","#e8af3408","#54b87a08","#3da8f508"];
+  eras.forEach((e,i) => {
+    const x1 = xScale(e.y1), x2 = xScale(e.y2);
+    g.append("rect").attr("class","era-band")
+      .attr("x",x1).attr("y",0).attr("width",x2-x1).attr("height",height)
+      .attr("fill",eraCols[i]);
+    // Era labels: bottom of chart, inside band
+    if (x2 - x1 > 55) {
+      g.append("text").attr("class","era-label-text")
+        .attr("x",(x1+x2)/2).attr("y", height - 6).attr("text-anchor","middle")
+        .text(e.label);
+    }
+  });
+
+  // Grid
+  g.append("g").attr("class","grid")
+    .call(d3.axisLeft(yScale).ticks(5).tickSize(-width).tickFormat(""))
+    .selectAll(".domain").remove();
+
+  // 50% reference line
+  if (currentScale === "linear") {
+    const y50 = yScale(50);
+    g.append("line").attr("class","half-line")
+      .attr("x1",0).attr("y1",y50).attr("x2",width).attr("y2",y50);
+    g.append("text").attr("class","half-label")
+      .attr("x",4).attr("y",y50-4).text("50% majority");
+  }
+
+  // Axes
+  const xAx = g.append("g").attr("class","axis")
+    .attr("transform",`translate(0,${height})`)
+    .call(d3.axisBottom(xScale).tickFormat(d3.format("d")).ticks(10));
+  xAx.selectAll("text").attr("font-family","var(--font-body)").attr("font-size",11);
+
+  const yAx = g.append("g").attr("class","axis").call(
+    d3.axisLeft(yScale)
+      .ticks(currentScale === "log" ? 5 : 5)
+      .tickFormat(d => d + "%")
+  );
+  yAx.selectAll("text").attr("font-family","var(--font-body)").attr("font-size",11);
+
+  // Draw lines
+  drawLines();
+
+  // Overlay for mouse events
+  g.append("rect")
+    .attr("width",width).attr("height",height)
+    .attr("fill","transparent")
+    .on("mousemove", onMouseMove)
+    .on("mouseleave", onMouseLeave);
+}
+
+function buildScales() {
+  const allYears = TECHS.flatMap(t => t.data.map(d=>d.y));
+  const xDomain = [d3.min(allYears)-2, d3.max(allYears)+2];
+
+  xScale = d3.scaleLinear().domain(xDomain).range([0, width]);
+
+  if (currentScale === "log") {
+    yScale = d3.scaleLog().domain([1, 100]).range([height, 0]).clamp(true);
+  } else {
+    yScale = d3.scaleLinear().domain([0, 100]).range([height, 0]);
+  }
+}
+
+function getXValue(tech, d) {
+  if (currentMode === "year") {
+    return d.y - (tech.yearAt10 || tech.data[0].y);
+  }
+  return d.y;
+}
+
+function drawLines() {
+  // Remove old lines
+  g.selectAll(".tech-line,.dot-group,.end-label-g").remove();
+
+  TECHS.forEach(t => {
+    if (!activeSet.has(t.id)) return;
+
+    const lineData = (currentScale === "log")
+      ? t.data.filter(d => d.v >= 1)
+      : t.data;
+
+    const lineGen = d3.line()
+      .x(d => xScale(getXValue(t, d)))
+      .y(d => yScale(currentScale === "log" ? Math.max(1, d.v) : d.v))
+      .curve(d3.curveCatmullRom.alpha(0.5));
+
+    g.append("path")
+      .datum(lineData)
+      .attr("class","tech-line")
+      .attr("id","line-"+t.id)
+      .attr("d", lineGen)
+      .attr("stroke", t.color);
+
+  });
+
+  // Smart end-labels: collect positions, spread to avoid overlap
+  const labelItems = [];
+  TECHS.forEach(t => {
+    if (!activeSet.has(t.id)) return;
+    const lineData = (currentScale === "log") ? t.data.filter(d => d.v >= 1) : t.data;
+    if (!lineData.length) return;
+    const last = lineData[lineData.length-1];
+    const rawY = yScale(currentScale === "log" ? Math.max(1, last.v) : last.v);
+    labelItems.push({ t, rawY });
+  });
+  // Sort by Y
+  labelItems.sort((a,b) => a.rawY - b.rawY);
+  // Spread overlaps with force simulation — min 13px gap
+  const LABEL_H = 13;
+  for (let iter = 0; iter < 200; iter++) {
+    let moved = false;
+    for (let i = 1; i < labelItems.length; i++) {
+      const diff = labelItems[i].rawY - labelItems[i-1].rawY;
+      if (diff < LABEL_H) {
+        const shift = (LABEL_H - diff) / 2 + 0.5;
+        labelItems[i-1].rawY -= shift;
+        labelItems[i].rawY += shift;
+        moved = true;
+      }
+    }
+    if (!moved) break;
+  }
+  // Clamp to chart bounds without losing spread
+  const totalSpan = (labelItems.length - 1) * LABEL_H;
+  if (totalSpan < height) {
+    // Shift group so it fits
+    const top = labelItems[0].rawY;
+    const bot = labelItems[labelItems.length-1].rawY;
+    if (top < 4) { const d = 4 - top; labelItems.forEach(l => l.rawY += d); }
+    const newBot = labelItems[labelItems.length-1].rawY;
+    if (newBot > height - 4) { const d = newBot - (height-4); labelItems.forEach(l => l.rawY -= d); }
+  }
+  labelItems.forEach(item => {
+    item.rawY = Math.max(4, Math.min(height - 4, item.rawY));
+  });
+  // Draw connector tick + label in right margin
+  labelItems.forEach(({t, rawY}) => {
+    const lineData = (currentScale === "log") ? t.data.filter(d => d.v >= 1) : t.data;
+    const last = lineData[lineData.length-1];
+    const lineEndY = yScale(currentScale === "log" ? Math.max(1, last.v) : last.v);
+    // Tiny connector line from actual data point to spread label
+    g.append("line")
+      .attr("class","end-label-g")
+      .attr("x1", width + 3).attr("y1", lineEndY)
+      .attr("x2", width + 8).attr("y2", rawY)
+      .attr("stroke", t.color)
+      .attr("stroke-width", 0.8)
+      .attr("opacity", 0.5);
+    g.append("text")
+      .attr("class","end-label end-label-g")
+      .attr("x", width + 10)
+      .attr("y", rawY)
+      .attr("dy","0.35em")
+      .attr("fill", t.color)
+      .attr("font-size", 10)
+      .attr("font-weight", 600)
+      .attr("font-family", "var(--font-body)")
+      .text(t.name.split(" ")[0]);
+  });
+}
+
+// ─── HOVER ───────────────────────────────────────────────────────
+function onMouseMove(event) {
+  const [mx] = d3.pointer(event);
+  const year = xScale.invert(mx);
+  showTooltip(event, year);
+
+  // Crosshair
+  g.selectAll(".crosshair").remove();
+  g.append("line").attr("class","crosshair")
+    .attr("x1",mx).attr("y1",0).attr("x2",mx).attr("y2",height);
+}
+function onMouseLeave() {
+  hideTooltip();
+  g.selectAll(".crosshair").remove();
+}
+
+function showTooltip(event, year) {
+  const tooltip = document.getElementById("tooltip");
+  const active = TECHS.filter(t => activeSet.has(t.id));
+  const rows = active.map(t => {
+    const data = t.data;
+    let val = null;
+    for (let i = 0; i < data.length-1; i++) {
+      if (year >= data[i].y && year <= data[i+1].y) {
+        const frac = (year - data[i].y) / (data[i+1].y - data[i].y);
+        val = data[i].v + frac * (data[i+1].v - data[i].v);
+      }
+    }
+    if (val === null && data.length > 0) {
+      if (year < data[0].y) val = null;
+      else if (year >= data[data.length-1].y) val = data[data.length-1].v;
+    }
+    return {t, val};
+  }).filter(r => r.val !== null).sort((a,b) => b.val - a.val);
+
+  if (!rows.length) { hideTooltip(); return; }
+
+  const displayYear = Math.round(year);
+  tooltip.innerHTML = `<div class="tooltip-title">${displayYear}</div>` +
+    rows.map(r => `
+      <div class="tooltip-row">
+        <div class="tooltip-tech"><span class="tooltip-dot" style="background:${r.t.color}"></span>${r.t.name}</div>
+        <span class="tooltip-val" style="color:${r.t.color}">${r.val.toFixed(1)}%</span>
+      </div>`).join("");
+
+  const wrap = document.querySelector(".chart-wrap");
+  const bb = wrap.getBoundingClientRect();
+  const tipW = 190, tipH = 200;
+  const [ex, ey] = d3.pointer(event, wrap);
+  let tx = ex + 14, ty = ey - 20;
+  if (tx + tipW > bb.width - 10) tx = ex - tipW - 10;
+  if (ty + tipH > bb.height - 10) ty = bb.height - tipH - 10;
+  if (ty < 5) ty = 5;
+
+  tooltip.style.cssText = `left:${tx}px;top:${ty}px;opacity:1;display:block`;
+
+  // Insight
+  const top = rows[0];
+  document.getElementById("insight-text").innerHTML =
+    `<strong>${displayYear}:</strong> ${top.t.name} at <strong style="color:${top.t.color}">${top.val.toFixed(0)}%</strong> adoption — ${getInsightFor(top.t, displayYear)}`;
+}
+
+function getInsightFor(t, year) {
+  if (t.id === "smartphone" && year >= 2011 && year <= 2019) return `fastest mass-market technology ramp in U.S. history`;
+  if (t.id === "electricity" && year < 1940) return `rural electrification still lagging urban areas`;
+  if (t.id === "landline" && year > 2005) return `declining as mobile phones replace landlines`;
+  if (t.id === "radio" && year < 1935) return `sweeping the nation — 10% to majority in just 5 years`;
+  if (t.id === "colortv" && year > 1965 && year < 1980) return `benefiting from existing TV infrastructure`;
+  if (t.id === "internet" && year > 1993 && year < 2005) return `world wide web expanding at historic pace`;
+  return t.description.toLowerCase();
+}
+
+function hideTooltip() {
+  const t = document.getElementById("tooltip");
+  t.style.opacity = 0;
+  setTimeout(() => { t.style.display = "none"; }, 120);
+}
+
+// ─── INTERACTIONS ─────────────────────────────────────────────────
+function toggleTech(id) {
+  if (activeSet.has(id)) { activeSet.delete(id); } else { activeSet.add(id); }
+  document.querySelector(`[data-id="${id}"]`).classList.toggle("active");
+  drawLines();
+  buildSpeedCards();
+}
+function toggleAll(state) {
+  TECHS.forEach(t => {
+    if (state) activeSet.add(t.id); else activeSet.delete(t.id);
+    const el = document.querySelector(`[data-id="${t.id}"]`);
+    if (el) el.classList.toggle("active", state);
+  });
+  drawLines();
+  buildSpeedCards();
+}
+function setHover(id) {
+  hoveredTech = id;
+  if (!id) {
+    g && g.selectAll(".tech-line").classed("dimmed",false).classed("highlighted",false);
+    return;
+  }
+  g && g.selectAll(".tech-line").each(function(d, i, nodes) {
+    const lineId = d3.select(this).attr("id");
+    const techId = lineId ? lineId.replace("line-","") : null;
+    d3.select(this)
+      .classed("dimmed", techId !== id && !!techId)
+      .classed("highlighted", techId === id);
+  });
+}
+function setScale(s, btn) {
+  currentScale = s;
+  document.querySelectorAll(".btn-toggle-group:first-child .btn-toggle").forEach(b => b.classList.toggle("active", b.dataset.scale === s));
+  initChart();
+}
+function setMode(m, btn) {
+  currentMode = m;
+  document.querySelectorAll(".btn-toggle-group:nth-child(2) .btn-toggle").forEach(b => b.classList.toggle("active", b.dataset.mode === m));
+  initChart();
+}
+
+// ─── THEME TOGGLE ────────────────────────────────────────────────
+(function() {
+  const t = document.querySelector("[data-theme-toggle]");
+  const r = document.documentElement;
+  let d = r.getAttribute("data-theme") || (matchMedia("(prefers-color-scheme:dark)").matches ? "dark" : "light");
+  r.setAttribute("data-theme", d);
+  const updateIcon = () => {
+    t.innerHTML = d === "dark"
+      ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>`
+      : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+  };
+  updateIcon();
+  t && t.addEventListener("click", () => {
+    d = d === "dark" ? "light" : "dark";
+    r.setAttribute("data-theme", d);
+    updateIcon();
+    // Redraw with updated colors
+    setTimeout(() => initChart(), 50);
+  });
+})();
+
+// ─── INIT ─────────────────────────────────────────────────────────
+buildSidebar();
+buildAnnotations();
+
+// Wait for fonts + layout
+window.addEventListener("load", () => {
+  setTimeout(initChart, 80);
+});
+
+// Resize
+let resizeTimer;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(initChart, 120);
+});
+</script>
+</body>
+</html>
