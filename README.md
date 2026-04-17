@@ -2,7 +2,7 @@
 
 An interactive S-curve visualization of how 11 major technologies spread through American households from 1900 to the present. Built with D3.js as a single self-contained HTML file — no build step, no dependencies beyond a CDN.
 
-**[Live Demo](https://www.perplexity.ai/computer/a/u-s-technology-adoption-timeli-4SfRYMIhQzGV22Hkr1dPgA)**
+**[Live Demo → anndunkin.github.io/us-tech-adoption](https://anndunkin.github.io/us-tech-adoption/)**
 
 ![Preview](preview.png)
 
